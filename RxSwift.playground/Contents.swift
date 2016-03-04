@@ -16,23 +16,23 @@ func printExampleOf(description: String) {
 enum Error: ErrorType { case A }
 
 exampleOf("empty") {
-  _ = Observable<Int>.empty().subscribe { print($0) }
+  Observable<Int>.empty().subscribe { print($0) }.dispose()
 }
 
 exampleOf("never") {
-  _ = Observable<Int>.never().subscribe { print($0) }
+  Observable<Int>.never().subscribe { print($0) }.dispose()
 }
 
 exampleOf("just") {
-  _ = Observable.just(32).subscribe { print($0) }
+  Observable.just(32).subscribe { print($0) }.dispose()
 }
 
 exampleOf("of") {
-  _ = Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).subscribe { print($0) }
+  Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).subscribe { print($0) }.dispose()
 }
 
 exampleOf("toObservable") {
-  _ = [1, 2, 3].toObservable().subscribe { print($0) }
+  [1, 2, 3].toObservable().subscribe { print($0) }.dispose()
 }
 
 exampleOf("create") {
@@ -44,15 +44,16 @@ exampleOf("create") {
     }
   }
   
-  _ = myJust(5).subscribe { print($0) }
+  myJust(5).subscribe { print($0) }.dispose()
 }
 
 exampleOf("generate") {
-  _ = Observable.generate(
+  Observable.generate(
     initialState: 0,
     condition: { $0 < 3 },
     iterate: { $0 + 1 }
     ).subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("error") {
@@ -71,23 +72,27 @@ exampleOf("deferred") {
     }
   }
   
-  _ = deferredSequence.subscribe { print($0) }
-  _ = deferredSequence.subscribe { print($0) }
+  deferredSequence.subscribe { print($0) }.dispose()
+  deferredSequence.subscribe { print($0) }.dispose()
 }
 
 // TODO: rx_observe, rx_tap, rx_notification
 
-func addSubscriptionToSubject<O: ObservableType>(subject: O, withSequenceName sequenceName: String) -> Disposable {
-  return subject.subscribe { print("Sequence:", sequenceName, "\nEvent:", $0) }
+extension ObservableType {
+  
+  func addPrintSubscription(name: String) -> Disposable {
+    return subscribe { print("Subscription:", name, "\nEvent:", $0) }
+  }
+  
 }
 
 exampleOf("PublishSubject") {
   let disposeBag = DisposeBag()
   let subject = PublishSubject<String>()
-  addSubscriptionToSubject(subject, withSequenceName: "1").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("1").addDisposableTo(disposeBag)
   subject.on(.Next("a"))
   subject.on(.Next("b"))
-  addSubscriptionToSubject(subject, withSequenceName: "2").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("2").addDisposableTo(disposeBag)
   subject.on(.Next("c"))
   subject.on(.Next("d"))
 }
@@ -95,10 +100,10 @@ exampleOf("PublishSubject") {
 exampleOf("ReplaySubject") {
   let disposeBag = DisposeBag()
   let subject = ReplaySubject<String>.create(bufferSize: 1)
-  addSubscriptionToSubject(subject, withSequenceName: "1").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("1").addDisposableTo(disposeBag)
   subject.on(.Next("a"))
   subject.on(.Next("b"))
-  addSubscriptionToSubject(subject, withSequenceName: "2").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("2").addDisposableTo(disposeBag)
   subject.on(.Next("c"))
   subject.on(.Next("d"))
 }
@@ -106,10 +111,10 @@ exampleOf("ReplaySubject") {
 exampleOf("BehaviorSubject") {
   let disposeBag = DisposeBag()
   let subject = BehaviorSubject(value: "z")
-  addSubscriptionToSubject(subject, withSequenceName: "1").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("1").addDisposableTo(disposeBag)
   subject.on(.Next("a"))
   subject.on(.Next("b"))
-  addSubscriptionToSubject(subject, withSequenceName: "2").addDisposableTo(disposeBag)
+  subject.addPrintSubscription("2").addDisposableTo(disposeBag)
   subject.on(.Next("c"))
   subject.on(.Next("d"))
   subject.on(.Completed)
@@ -118,69 +123,78 @@ exampleOf("BehaviorSubject") {
 exampleOf("Variable") {
   let disposeBag = DisposeBag()
   let variable = Variable("z")
-  addSubscriptionToSubject(variable.asObservable(), withSequenceName: "1").addDisposableTo(disposeBag)
+  variable.asObservable().addPrintSubscription("1").addDisposableTo(disposeBag)
   variable.value = "a"
   variable.value = "b"
-  addSubscriptionToSubject(variable.asObservable(), withSequenceName: "2").addDisposableTo(disposeBag)
+  variable.asObservable().addPrintSubscription("2").addDisposableTo(disposeBag)
   variable.value = "c"
   variable.value = "d"
 }
 
 exampleOf("map") {
-  _ = Observable.of(1, 2, 3).map { $0 * 2 }.subscribe { print($0) }
+  Observable.of(1, 2, 3).map { $0 * 2 }.subscribe { print($0) }.dispose()
 }
 
 exampleOf("flatMap") {
   let sequenceString = Observable.of("A", "B", "C", "D", "E", "F", "--")
   
-  _ = Observable.of(1, 2, 3)
+  Observable.of(1, 2, 3)
     .flatMap { i -> Observable<String> in
       print("Sequence:", i)
       return sequenceString
     }
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("scan") {
-  _ = Observable.of(0, 1, 2, 3, 4, 5)
+  Observable.of(0, 1, 2, 3, 4, 5)
     .scan(0) {
       $0 + $1
     }
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("filter") {
-  _ = Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+  Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     .filter { $0 % 2 == 0 }
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("distinctUntilChanged") {
-  _ = Observable.of(1, 2, 2, 3, 3, 3, 1)
+  Observable.of(1, 2, 2, 3, 3, 3, 1)
     .distinctUntilChanged()
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("take") {
-  _ = Observable.of(0, 1, 2, 3, 4, 5)
+  Observable.of(0, 1, 2, 3, 4, 5)
     .take(3)
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("startWith") {
-  _ = Observable.of(4, 5, 6)
+  Observable.of(4, 5, 6)
     .startWith(3)
     .startWith(1, 2)
     .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("combineLatest1") {
+  let disposeBag = DisposeBag()
   let integerSubject = PublishSubject<Int>()
   let stringSubject = PublishSubject<String>()
   
-  _ = Observable.combineLatest(integerSubject, stringSubject) {
+  Observable.combineLatest(integerSubject, stringSubject) {
     "\($0) \($1)"
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .addDisposableTo(disposeBag)
   
   integerSubject.onNext(1)
   stringSubject.onNext("A")
@@ -196,9 +210,11 @@ exampleOf("combineLatest2") {
   let integerObservableA = Observable.just(2)
   let integerObservableB = Observable.of(0, 1, 2, 3)
   
-  _ = Observable.combineLatest(integerObservableA, integerObservableB) {
+  Observable.combineLatest(integerObservableA, integerObservableB) {
     $0 * $1
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("combineLatest3") {
@@ -206,19 +222,23 @@ exampleOf("combineLatest3") {
   let integerObservableB = Observable.of(0, 1, 2, 3)
   let integerObservableC = Observable.of(0, 1, 2, 3, 4)
   
-  _ = Observable.combineLatest(integerObservableA, integerObservableB, integerObservableC) {
+  Observable.combineLatest(integerObservableA, integerObservableB, integerObservableC) {
 //    print($0, $1, $2) // TODO: Why?: 2, 3, 0; 2, 3, 1; 2, 3, 2; 2, 3, 3; 2, 3, 4
     ($0 + $1) * $2
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("combineLatest4") {
   let integerObservable = Observable.just(2)
   let stringObservable = Observable.just("a")
   
-  _ = Observable.combineLatest(integerObservable, stringObservable) {
+  Observable.combineLatest(integerObservable, stringObservable) {
     String($0) + $1
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("combineLatest5") {
@@ -226,19 +246,24 @@ exampleOf("combineLatest5") {
   let integerObservableB = Observable.of(0, 1, 2, 3)
   let integerObservableC = Observable.of(0, 1, 2, 3, 4)
   
-  _ = [integerObservableA, integerObservableB, integerObservableC].combineLatest {
+  [integerObservableA, integerObservableB, integerObservableC].combineLatest {
 //    print($0[0], $0[1], $0[2]) // TODO: Why?: 2, 3, 0; 2, 3, 1; 2, 3, 2; 2, 3, 3; 2, 3, 4
     Int(($0[0] + $0[1]) * $0[2])
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("zip") {
+  let disposeBag = DisposeBag()
   let stringSubject = PublishSubject<String>()
   let integerSubject = PublishSubject<Int>()
   
-  _ = Observable.zip(stringSubject, integerSubject) {
+  Observable.zip(stringSubject, integerSubject) {
     "\($0) \($1)"
-    }.subscribe { print($0) }
+    }
+    .subscribe { print($0) }
+    .addDisposableTo(disposeBag)
   
   stringSubject.onNext("A")
   integerSubject.onNext(1)
@@ -249,12 +274,14 @@ exampleOf("zip") {
 }
 
 exampleOf("merge1") {
+  let disposeBag = DisposeBag()
   let integerSubject1 = PublishSubject<Int>()
   let integerSubject2 = PublishSubject<Int>()
   
-  _ = Observable.of(integerSubject1, integerSubject2)
+  Observable.of(integerSubject1, integerSubject2)
     .merge()
     .subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
   
   integerSubject1.onNext(20)
   integerSubject1.onNext(40)
@@ -266,13 +293,15 @@ exampleOf("merge1") {
 }
 
 exampleOf("merge2") {
+  let disposeBag = DisposeBag()
   let integerSubject1 = PublishSubject<Int>()
   let integerSubject2 = PublishSubject<Int>()
   let integerSubject3 = PublishSubject<Int>()
   
-  _ = Observable.of(integerSubject1, integerSubject2, integerSubject3)
+  Observable.of(integerSubject1, integerSubject2, integerSubject3)
     .merge(maxConcurrent: 2)
     .subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
   
   integerSubject1.onNext(20)
   integerSubject1.onNext(40)
@@ -285,14 +314,16 @@ exampleOf("merge2") {
 }
 
 exampleOf("switchLatest") {
+  let disposeBag = DisposeBag()
   let variable1 = Variable(0)
   let variable2 = Variable(200)
   let variable3 = Variable(variable1.asObservable()) // Observable<Observable<Int>>
   
-  _ = variable3
+  variable3
     .asObservable()
     .switchLatest()
     .subscribe { print($0) }
+    .addDisposableTo(disposeBag)
   
   variable1.value = 1
   variable1.value = 2
@@ -305,12 +336,14 @@ exampleOf("switchLatest") {
 }
 
 exampleOf("catchError1") {
+  let disposeBag = DisposeBag()
   let sequenceThatFails = PublishSubject<Int>()
   let recoverySequence = Observable.of(100, 200, 300)
   
-  _ = sequenceThatFails
+  sequenceThatFails
     .catchError { _ in return recoverySequence }
     .subscribe { print($0) }
+    .addDisposableTo(disposeBag)
   
   sequenceThatFails.onNext(1)
   sequenceThatFails.onNext(2)
@@ -318,10 +351,12 @@ exampleOf("catchError1") {
 }
 
 exampleOf("catchError2") {
+  let disposeBag = DisposeBag()
   let sequenceThatFails = PublishSubject<Int>()
-  _ = sequenceThatFails
+  sequenceThatFails
     .catchErrorJustReturn(100)
     .subscribe { print($0) }
+    .addDisposableTo(disposeBag)
   
   sequenceThatFails.onNext(1)
   sequenceThatFails.onNext(2)
@@ -348,62 +383,77 @@ exampleOf("retry") {
     return NopDisposable.instance
   }
   
-  _ = sequence.retry().subscribe { print($0) }
+  sequence
+    .retry()
+    .subscribe { print($0) }
+    .dispose()
 }
 
 exampleOf("subscribe") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
-  _ = sequence.subscribe { print($0) }
+  sequence.subscribe { print($0) }.addDisposableTo(disposeBag)
   sequence.onNext(1)
   sequence.onCompleted()
 }
 
 exampleOf("subscribeNext") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
-  _ = sequence.subscribeNext { print($0) }
+  sequence.subscribeNext { print($0) }.addDisposableTo(disposeBag)
   sequence.onNext(1)
   sequence.onCompleted()
 }
 
 exampleOf("subscribeCompleted") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
   
-//  _ = sequence.subscribeNext { print($0) }
-  _ = sequence.subscribeCompleted { print("Done!") }
+//  sequence.subscribeNext { print($0) }.addDisposableTo(disposeBag)
+  sequence.subscribeCompleted { print("Done!") }.addDisposableTo(disposeBag)
   
   sequence.onNext(1)
   sequence.onCompleted()
 }
 
 exampleOf("subscribeError") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
-  _ = sequence.subscribeError { print("Error:", $0) }
+  sequence.subscribeError { print("Error:", $0) }.addDisposableTo(disposeBag)
   sequence.onNext(1)
   sequence.onError(Error.A)
 }
 
 exampleOf("doOn/doOnNext") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
   
-  _ = sequence
+  sequence
     .doOnNext { print("Intercepted event:", $0) }
     .subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
   
-  _ = sequence.subscribeCompleted { print("Done!") }
+  sequence
+    .subscribeCompleted { print("Done!") }
+    .addDisposableTo(disposeBag)
   
   sequence.onNext(1)
   sequence.onCompleted()
 }
 
 exampleOf("takeUntil") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
   let haltSequence = PublishSubject<String>()
   
-  _ = sequence
+  sequence
     .takeUntil(haltSequence)
     .subscribeNext { print($0) }
-  
-  _ = haltSequence.subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
+
+  haltSequence
+    .subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
   
 //  haltSequence.onNext("Hello")
   sequence.onNext(1)
@@ -413,11 +463,13 @@ exampleOf("takeUntil") {
 }
 
 exampleOf("takeWhile") {
+  let disposeBag = DisposeBag()
   let sequence = PublishSubject<Int>()
   
-  _ = sequence
+  sequence
     .takeWhile { $0 < 3 }
     .subscribeNext { print($0) }
+    .addDisposableTo(disposeBag)
   
   sequence.onNext(1)
   sequence.onNext(2)
@@ -430,9 +482,10 @@ exampleOf("concat") {
   let subject2 = BehaviorSubject(value: 200)
   let subject3 = BehaviorSubject(value: subject1) // Observable<Observable<Int>>
   
-  _ = subject3
+  subject3
     .concat()
     .subscribe { print($0) }
+    .dispose()
   
   subject1.onNext(1)
   subject1.onNext(2)
@@ -449,9 +502,10 @@ exampleOf("concat") {
 }
 
 exampleOf("reduce") {
-  _ = Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+  Observable.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     .reduce(0, accumulator: +)
     .subscribeNext { print($0) }
+    .dispose()
 }
 
 func delay(delay: UInt64, closure: Void -> Void) {
@@ -472,7 +526,7 @@ func sampleWithoutConnectableOperators() {
   }
 }
 
-//sampleWithoutConnectableOperators()
+sampleWithoutConnectableOperators()
 
 func sampleWithMulticast() {
   printExampleOf(__FUNCTION__)
