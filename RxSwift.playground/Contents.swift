@@ -530,7 +530,7 @@ func delay(delay: UInt64, closure: Void -> Void) {
 }
 
 func sampleWithoutConnectableOperators() {
-  printExampleOf(__FUNCTION__)
+  printExampleOf(#function)
   let observable = Observable<Int>.interval(1.0, scheduler: MainScheduler.instance)
   _ = observable.subscribe { print("First subscription:", $0) }
   
@@ -542,7 +542,7 @@ func sampleWithoutConnectableOperators() {
 //sampleWithoutConnectableOperators()
 
 func sampleWithMulticast() {
-  printExampleOf(__FUNCTION__)
+  printExampleOf(#function)
   let integerA$ = PublishSubject<Int64>()
   _ = integerA$.subscribeNext { print("Subject:", $0) }
   
@@ -560,11 +560,11 @@ func sampleWithMulticast() {
 
 func sampleWithReplayBuffer(buffer: Int? = nil) {
   let bufferString = buffer != nil ? String(buffer!) : "all"
-  printExampleOf("\(__FUNCTION__): \(bufferString)")
+  printExampleOf("\(#function): \(bufferString)")
   let integer$: ConnectableObservable<Int>
   
   if let buffer = buffer {
-  integer$ = Observable<Int>
+    integer$ = Observable<Int>
     .interval(1.0, scheduler: MainScheduler.instance)
     .replay(buffer)
   } else {
@@ -583,7 +583,7 @@ func sampleWithReplayBuffer(buffer: Int? = nil) {
 //sampleWithReplayBuffer()
 
 func sampleWithPublish() {
-  printExampleOf(__FUNCTION__)
+  printExampleOf(#function)
   let integer$ = Observable<Int>
     .interval(1.0, scheduler: MainScheduler.instance)
     .publish()

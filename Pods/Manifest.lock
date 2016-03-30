@@ -1,10 +1,10 @@
 PODS:
-  - RxSwift (2.2.0)
+  - RxSwift (2.3.1)
 
 DEPENDENCIES:
   - RxSwift
 
 SPEC CHECKSUMS:
-  RxSwift: b8a749f2204c6c7a5c29b306a9c3bc11d5b87c5b
+  RxSwift: 829b2843e9eddc77a02cb3f5117f0d55f8f646f1
 
 COCOAPODS: 0.39.0
