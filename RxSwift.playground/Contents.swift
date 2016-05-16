@@ -4,7 +4,7 @@ XCPlaygroundPage.currentPage.needsIndefiniteExecution = true
 
 import RxSwift
 
-func exampleOf(description: String, action: Void -> Void) {
+func exampleOf(description: String, @noescape action: Void -> Void) {
   printExampleOf(description)
   action()
 }
@@ -603,11 +603,11 @@ exampleOf("flatMapLatest with stream that contains streams") {
     var stringValue$: Variable<String>
   }
   
-  let someStruct1 = SomeStruct(stringValue$: Variable<String>("One"))
-  let someStruct2 = SomeStruct(stringValue$: Variable<String>("Two"))
-  let someStruct3 = SomeStruct(stringValue$: Variable<String>("Three"))
+  let someStruct1 = SomeStruct(stringValue$: Variable("One"))
+  let someStruct2 = SomeStruct(stringValue$: Variable("Two"))
+  let someStruct3 = SomeStruct(stringValue$: Variable("Three"))
   
-  let someStruct$ = Variable<SomeStruct>(someStruct1)
+  let someStruct$ = Variable(someStruct1)
   
   someStruct$
     .asObservable()
@@ -620,5 +620,68 @@ exampleOf("flatMapLatest with stream that contains streams") {
   
   someStruct$.value = someStruct2
   someStruct$.value = someStruct3
+  someStruct1.stringValue$.value = "Should I see this?" // No, if using flatMapLatest, but yes if using flatMap
   someStruct3.stringValue$.value = "Changed"
+}
+
+exampleOf("Observing observables of observables within an array of observables") {
+  class Thing {
+    var setting$: Variable<String>
+    
+    init(_ setting: String) {
+      setting$ = Variable<String>(setting)
+    }
+  }
+  
+  let thing1 = Thing("Foo")
+  let thing2 = Thing("Bar")
+  let thing3 = Thing("Baz")
+  
+  var things$ = Variable<[Thing]> ([thing1, thing2, thing3])
+  var disposeBag = DisposeBag()
+  
+  things$.asObservable().subscribeNext {
+    disposeBag = DisposeBag()
+    
+    $0.map {
+      $0.setting$.asObservable()
+        .subscribeNext { print($0) }
+        .addDisposableTo(disposeBag)
+    }
+    }.addDisposableTo(disposeBag)
+  
+//  things$.asObservable().flatMap {
+//    $0.map { $0.setting$.asObservable() }.combineLatest { $0 }
+//    }.subscribeNext { print($0) }
+//    .addDisposableTo(disposeBag)
+  
+  things$.value[0].setting$.value = "Woot"
+  things$.value[1].setting$.value = "What"
+  things$.value.append(Thing("Whiz"))
+}
+
+exampleOf("Combining two Variables") {
+  let center = Variable<CGPoint>(CGPoint.zero)
+  let size = Variable<CGSize>(CGSize.zero)
+  
+  var color: Observable<UIColor> {
+    return Observable.combineLatest(
+      center.asObservable(),
+      size.asObservable()
+    ) { center, size in
+      let color: UIColor
+      switch (center, size) {
+      case (CGPoint(x: 1, y: 1), CGSize(width: 1, height: 1)):
+        color = UIColor.blackColor()
+      default:
+        color = UIColor.whiteColor()
+      }
+      
+      return color
+    }
+  }
+  
+  color.distinctUntilChanged().subscribe { print($0) }
+  center.value = CGPoint(x: 1, y: 1)
+  size.value = CGSize(width: 1, height: 1)
 }
